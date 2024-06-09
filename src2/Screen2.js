@@ -2,15 +2,15 @@ import { StyleSheet, Text, View, Image, TouchableOpacity, Button, Dimensions } f
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
-import cinemaData from './db.json';  
+import cinemaData from '../src/db.json';
 import axios from 'axios';
 
-export default function AddPlace({ route, navigation }) {
+export default function Screen2({ route, navigation }) {
 
   const defaultLocation = () => {
     return {
       latitude: 10.859313791905437,
-      longitude: 106.60419726148713,  
+      longitude: 106.60419726148713,
       latitudeDelta: 0.722,
       longitudeDelta: 0.421,
     };
@@ -170,77 +170,20 @@ export default function AddPlace({ route, navigation }) {
     }
   };
 
-  const handleFindNearbyMovieTheaters = async () => {
-    try {
-      if (currentLocation) {
-        const nearbyTheaters = [];
-
-        cinemaData.forEach(cinema => {
-          const { coordinates } = cinema.location;
-          const distance = calculateDistance(currentLocation.latitude, currentLocation.longitude, coordinates[1], coordinates[0]);
-          if (distance <= 20000) { // Check if distance is less than or equal to 20km
-            nearbyTheaters.push(cinema);
-          }
-        });
-
-        if (nearbyTheaters.length > 0) {
-          // Set nearby theaters state
-          setNearestCinema(null);
-
-          // Set markers for nearby theaters
-          const theaterMarkers = nearbyTheaters.map(cinema => ({
-            coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
-            title: cinema.cinema_name,
-            description: cinema.location_name,
-          }));
-
-          // Update the markers state
-          setTheaterMarkers(theaterMarkers);
-
-          setRegion({
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          });
-
-          const addresses = await Promise.all(nearbyTheaters.map(async (cinema) => {
-            const address = await Location.reverseGeocodeAsync({
-              latitude: cinema.location.coordinates[1],
-              longitude: cinema.location.coordinates[0],
-            });
-            return address.map(addr =>
-              `${addr.streetNumber} ${addr.street}, ${addr.city}, ${addr.region}, ${addr.country}`
-            ).join(', ');
-          }));
-
-          const formattedAddresses = addresses.join('\n');
-          console.log('Nearby Movie Theaters Addresses:', formattedAddresses);
-        } else {
-          console.log('No nearby movie theaters found');
-        }
-      } else {
-        console.log('Current location not available');
-      }
-    } catch (error) {
-      console.error('Error finding nearby movie theaters:', error);
-    }
-  };
-
   const handleShowDirections = () => {
     if (nearestCinema && currentLocation) {
       const fetchRoute = async () => {
         const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a'; // Thay YOUR_API_KEY bằng API key của bạn
         const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${currentLocation.longitude},${currentLocation.latitude}&end=${nearestCinema.location.coordinates[0]},${nearestCinema.location.coordinates[1]}`;
-        
+
         try {
           const response = await axios.get(url);
           console.log('Đã lấy thông tin đường đi');
-          
+
           // Kiểm tra xem response.data có tồn tại và có chứa features hay không
           if (response.data && response.data.features && response.data.features.length > 0) {
             const features = response.data.features[0];
-            
+
             // Kiểm tra xem features.geometry có tồn tại
             if (features.geometry && features.geometry.coordinates) {
               const coords = features.geometry.coordinates.map(point => ({
@@ -258,8 +201,8 @@ export default function AddPlace({ route, navigation }) {
           console.error('Error fetching route:', error);
         }
       };
-  
-      fetchRoute();      
+
+      fetchRoute();
       setShowDirections(true);
     } else {
       console.log('Nearest cinema or current location not available');
@@ -283,20 +226,13 @@ export default function AddPlace({ route, navigation }) {
     return d;
   };
 
-  const handleDeleteAll = () => {
-    setCurrentLocation(null);
-    setNearestCinema(null);
-    setTheaterMarkers([]);
-    setShowDirections(false);
-  }
-
   return (
     <View style={styles.container}>
       <View style={{ marginTop: 10 }}>
         <View>
           {region ? (
-            <View style={{ width: 360, height: 400 }}>
-              <MapView style={{ width: 360, height: 400 }} region={region}>
+            <View style={{ width: 360, height: 500 }}>
+              <MapView style={{ width: 360, height: 500 }} region={region}>
                 {/* Hiển thị Marker cho vị trí hiện tại */}
                 {currentLocation && (
                   <Marker
@@ -314,16 +250,6 @@ export default function AddPlace({ route, navigation }) {
                     description={nearestCinema.location_name}
                   />
                 )}
-
-                {/* Hiển thị Markers cho các rạp chiếu phim gần đó */}
-                {theaterMarkers.map((marker, index) => (
-                  <Marker
-                    key={index}
-                    coordinate={marker.coordinate}
-                    title={marker.title}
-                    description={marker.description}
-                  />
-                ))}
 
                 {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất */}
                 {showDirections && (
@@ -358,13 +284,7 @@ export default function AddPlace({ route, navigation }) {
         <Button title="Find the nearest movie theater" onPress={handleFindNearestCinema}></Button>
       </View>
       <View style={{ marginTop: 20 }}>
-        <Button title="Find movie theaters nearby" onPress={handleFindNearbyMovieTheaters}></Button>
-      </View>
-      <View style={{ marginTop: 20 }}>
         <Button title="Find the shortest route to the nearest cinema" onPress={handleShowDirections}></Button>
-      </View>
-      <View style={{ marginTop: 20 }}>
-        <Button title="Delete All" onPress={handleDeleteAll}></Button>
       </View>
     </View>
   );

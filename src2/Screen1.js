@@ -2,15 +2,15 @@ import { StyleSheet, Text, View, Image, TouchableOpacity, Button, Dimensions } f
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
-import cinemaData from './db.json';  
+import cinemaData from '../src/db.json';
 import axios from 'axios';
 
-export default function AddPlace({ route, navigation }) {
+export default function Screen1({ route, navigation }) {
 
   const defaultLocation = () => {
     return {
       latitude: 10.859313791905437,
-      longitude: 106.60419726148713,  
+      longitude: 106.60419726148713,
       latitudeDelta: 0.722,
       longitudeDelta: 0.421,
     };
@@ -84,92 +84,6 @@ export default function AddPlace({ route, navigation }) {
   const customLatitude = latitude;
   const customLongitude = longitude;
 
-  const getCustomLocation = async (customLatitude, customLongitude) => {
-    navigation.navigate('Map');
-    try {
-      if (typeof customLatitude === 'number' && typeof customLongitude === 'number') {
-        const latitude = customLatitude;
-        const longitude = customLongitude;
-
-        setRegion({
-          latitude: latitude,
-          longitude: longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-
-        const address = await Location.reverseGeocodeAsync({
-          latitude: latitude,
-          longitude: longitude,
-        });
-
-        const newFormattedAddress = address
-          .map(
-            (address) =>
-              `${address.streetNumber} ${address.street}, ${address.city}, ${address.region}, ${address.country}`
-          )
-          .join(', ');
-
-        setFormattedAddress(newFormattedAddress);
-        console.log('Custom Location Address:', newFormattedAddress);
-      } else {
-        console.error('Invalid latitude or longitude values');
-      }
-    } catch (error) {
-      console.error('Error getting custom location:', error);
-    }
-  };
-
-  const handleFindNearestCinema = async () => {
-    try {
-      if (currentLocation) {
-        let nearestCinema = null;
-        let nearestDistance = Infinity;
-
-        cinemaData.forEach(cinema => {
-          const { coordinates } = cinema.location;
-          const distance = calculateDistance(currentLocation.latitude, currentLocation.longitude, coordinates[1], coordinates[0]);
-          if (distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestCinema = cinema;
-          }
-        });
-
-        if (nearestCinema) {
-          setNearestCinema(nearestCinema);
-
-          setRegion({
-            latitude: nearestCinema.location.coordinates[1],
-            longitude: nearestCinema.location.coordinates[0],
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          });
-
-          const address = await Location.reverseGeocodeAsync({
-            latitude: nearestCinema.location.coordinates[1],
-            longitude: nearestCinema.location.coordinates[0],
-          });
-
-          const newFormattedAddress = address
-            .map(
-              (address) =>
-                `${address.streetNumber} ${address.street}, ${address.city}, ${address.region}, ${address.country}`
-            )
-            .join(', ');
-
-          setFormattedAddress(newFormattedAddress);
-          console.log('Nearest Cinema Address:', newFormattedAddress);
-        } else {
-          console.log('No cinema found');
-        }
-      } else {
-        console.log('Current location not available');
-      }
-    } catch (error) {
-      console.error('Error finding nearest cinema:', error);
-    }
-  };
-
   const handleFindNearbyMovieTheaters = async () => {
     try {
       if (currentLocation) {
@@ -227,45 +141,6 @@ export default function AddPlace({ route, navigation }) {
     }
   };
 
-  const handleShowDirections = () => {
-    if (nearestCinema && currentLocation) {
-      const fetchRoute = async () => {
-        const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a'; // Thay YOUR_API_KEY bằng API key của bạn
-        const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${currentLocation.longitude},${currentLocation.latitude}&end=${nearestCinema.location.coordinates[0]},${nearestCinema.location.coordinates[1]}`;
-        
-        try {
-          const response = await axios.get(url);
-          console.log('Đã lấy thông tin đường đi');
-          
-          // Kiểm tra xem response.data có tồn tại và có chứa features hay không
-          if (response.data && response.data.features && response.data.features.length > 0) {
-            const features = response.data.features[0];
-            
-            // Kiểm tra xem features.geometry có tồn tại
-            if (features.geometry && features.geometry.coordinates) {
-              const coords = features.geometry.coordinates.map(point => ({
-                latitude: point[1], // latitude
-                longitude: point[0], // longitude
-              }));
-              setRouteCoords(coords);
-            } else {
-              console.error('Missing geometry in features:', features);
-            }
-          } else {
-            console.error('No features found in response:', response.data);
-          }
-        } catch (error) {
-          console.error('Error fetching route:', error);
-        }
-      };
-  
-      fetchRoute();      
-      setShowDirections(true);
-    } else {
-      console.log('Nearest cinema or current location not available');
-    }
-  };
-
   // Function to calculate distance between two coordinates
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371e3; // metres
@@ -283,35 +158,19 @@ export default function AddPlace({ route, navigation }) {
     return d;
   };
 
-  const handleDeleteAll = () => {
-    setCurrentLocation(null);
-    setNearestCinema(null);
-    setTheaterMarkers([]);
-    setShowDirections(false);
-  }
-
   return (
     <View style={styles.container}>
       <View style={{ marginTop: 10 }}>
         <View>
           {region ? (
-            <View style={{ width: 360, height: 400 }}>
-              <MapView style={{ width: 360, height: 400 }} region={region}>
+            <View style={{ width: 360, height: 580 }}>
+              <MapView style={{ width: 360, height: 580 }} region={region}>
                 {/* Hiển thị Marker cho vị trí hiện tại */}
                 {currentLocation && (
                   <Marker
                     coordinate={{ latitude: currentLocation.latitude, longitude: currentLocation.longitude }}
                     title="Your Location"
                     description="You are here"
-                  />
-                )}
-
-                {/* Hiển thị Marker cho rạp chiếu phim gần nhất */}
-                {nearestCinema && (
-                  <Marker
-                    coordinate={{ latitude: nearestCinema.location.coordinates[1], longitude: nearestCinema.location.coordinates[0] }}
-                    title={nearestCinema.cinema_name}
-                    description={nearestCinema.location_name}
                   />
                 )}
 
@@ -324,11 +183,6 @@ export default function AddPlace({ route, navigation }) {
                     description={marker.description}
                   />
                 ))}
-
-                {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất */}
-                {showDirections && (
-                  <Polyline coordinates={routeCoords} strokeColor="#3498db" strokeWidth={3} />
-                )}
               </MapView>
             </View>
           ) : (
@@ -339,32 +193,17 @@ export default function AddPlace({ route, navigation }) {
             </View>
           )}
         </View>
-        <View style={{ marginTop: 70, flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 20 }}>
+        <View style={{ marginTop: 10, alignItems: 'center' }}>
           <TouchableOpacity onPress={getCurrentLocation}>
             <View style={styles.greenBorder}>
               <Image source={require('../assets/map.png')} style={styles.image2} />
               <Text style={styles.text}>Locate User</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => getCustomLocation(customLatitude, customLongitude)}>
-            <View style={styles.greenBorder}>
-              <Image source={require('../assets/maps.png')} style={styles.image2} />
-              <Text style={styles.text}>Pick on Map</Text>
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
       <View style={{ marginTop: 20 }}>
-        <Button title="Find the nearest movie theater" onPress={handleFindNearestCinema}></Button>
-      </View>
-      <View style={{ marginTop: 20 }}>
         <Button title="Find movie theaters nearby" onPress={handleFindNearbyMovieTheaters}></Button>
-      </View>
-      <View style={{ marginTop: 20 }}>
-        <Button title="Find the shortest route to the nearest cinema" onPress={handleShowDirections}></Button>
-      </View>
-      <View style={{ marginTop: 20 }}>
-        <Button title="Delete All" onPress={handleDeleteAll}></Button>
       </View>
     </View>
   );
