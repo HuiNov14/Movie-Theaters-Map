@@ -40,6 +40,19 @@ export default function Screen2({ route, navigation }) {
     })();
   }, []);
 
+  useEffect(() => {
+    if (route.params?.selectedLocation) {
+      const { selectedLocation } = route.params;
+      setCurrentLocation(selectedLocation);
+      setRegion({
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    }
+  }, [route.params?.selectedLocation]);
+
   const getCurrentLocation = async () => {
     setCurrentLocation(defaultUserLocation); // lấy vị trí mặc định nếu xài máy ảo 
     setRegion({
@@ -77,46 +90,6 @@ export default function Screen2({ route, navigation }) {
       console.log('Current Address:', newFormattedAddress);
     } catch (error) {
       console.error('Error getting address:', error);
-    }
-  };
-
-  const { latitude = 0, longitude = 0 } = route.params || {};
-  const customLatitude = latitude;
-  const customLongitude = longitude;
-
-  const getCustomLocation = async (customLatitude, customLongitude) => {
-    navigation.navigate('Map');
-    try {
-      if (typeof customLatitude === 'number' && typeof customLongitude === 'number') {
-        const latitude = customLatitude;
-        const longitude = customLongitude;
-
-        setRegion({
-          latitude: latitude,
-          longitude: longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-
-        const address = await Location.reverseGeocodeAsync({
-          latitude: latitude,
-          longitude: longitude,
-        });
-
-        const newFormattedAddress = address
-          .map(
-            (address) =>
-              `${address.streetNumber} ${address.street}, ${address.city}, ${address.region}, ${address.country}`
-          )
-          .join(', ');
-
-        setFormattedAddress(newFormattedAddress);
-        console.log('Custom Location Address:', newFormattedAddress);
-      } else {
-        console.error('Invalid latitude or longitude values');
-      }
-    } catch (error) {
-      console.error('Error getting custom location:', error);
     }
   };
 
@@ -272,7 +245,7 @@ export default function Screen2({ route, navigation }) {
               <Text style={styles.text}>Locate User</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => getCustomLocation(customLatitude, customLongitude)}>
+          <TouchableOpacity onPress={() => navigation.navigate('Map')}>
             <View style={styles.greenBorder}>
               <Image source={require('../assets/maps.png')} style={styles.image2} />
               <Text style={styles.text}>Pick on Map</Text>
