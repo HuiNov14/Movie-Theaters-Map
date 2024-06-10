@@ -1,47 +1,42 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, Button, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, Button, Dimensions, ScrollView, TextInput } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker, Polyline } from 'react-native-maps';
-// import { Popup } from "react-leaflet";
 import * as Location from 'expo-location';
-import cinemaData from './db.json';  
+import cinemaData from '../src/db.json';
 import axios from 'axios';
-import { center } from '@turf/turf';
-
 
 const customIcon = require('../assets/placeholder.png'); //Icon Map
 
 const cinemaIcon = require('../assets/cinema.png'); //Icon Map
 
+export default function Screen1({ route, navigation }) {
 
-
-export default function AddPlace({ route, navigation }) {
   const defaultLocation = () => {
     return {
       latitude: 10.859313791905437,
-      longitude: 106.60419726148713,  
+      longitude: 106.60419726148713,
       latitudeDelta: 0.722,
       longitudeDelta: 0.421,
     };
   };
 
   const defaultUserLocation = {
-    latitude: 10.784030297891997,
-    longitude: 106.69214466713932,
-    latitudeDelta: 0.722,
-    longitudeDelta: 0.421,
+    latitude: 10.847388306318624,
+    longitude: 106.83729892481165,
   };
 
   const [currentLocation, setCurrentLocation] = useState(null); // No default location
   const [region, setRegion] = useState(defaultLocation());
   const [formattedAddress, setFormattedAddress] = useState('');
-  const [district, setDistrict] = useState(''); // Biến trạng thái để lưu thông tin quận
   const [nearestCinema, setNearestCinema] = useState(null);
   const [theaterMarkers, setTheaterMarkers] = useState([]);
   const [showDirections, setShowDirections] = useState(false);
   const [routeCoords, setRouteCoords] = useState([]);
-  const [districtCinemas, setDistrictCinemas] = useState([]);
+  const [district, setDistrict] = useState(''); // State để lưu quận được nhập
+  const [cinemasInDistrict, setCinemasInDistrict] = useState([]); // State để lưu các rạp phim trong quận
+  const [districtBoundary, setDistrictBoundary] = useState(null);
+  const [searchAddress, setSearchAddress] = useState(''); // New state for search input
 
-  
 
   useEffect(() => {
     (async () => {
@@ -55,73 +50,48 @@ export default function AddPlace({ route, navigation }) {
   }, []);
 
   const getCurrentLocation = async () => {
-    setCurrentLocation(defaultUserLocation); // lấy vị trí mặc định nếu xài máy ảo
+    setCurrentLocation(defaultUserLocation); // lấy vị trí mặc định nếu xài máy ảo 
     setRegion({
       latitude: defaultUserLocation.latitude,
       longitude: defaultUserLocation.longitude,
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     });
-  
+
+    //Lấy vị trí hiện tại của user nếu xài điện thoại
+    // const { status } = await Location.requestForegroundPermissionsAsync();
+    // if (status === 'granted') {
+    //   const location = await Location.getCurrentPositionAsync({});
+    //   const { latitude, longitude } = location.coords;
+    //   setCurrentLocation(location.coords);
+
+    //   setRegion({
+    //     latitude: latitude,
+    //     longitude: longitude,
+    //     latitudeDelta: 0.0922,
+    //     longitudeDelta: 0.0421,
+    //   });
+    // }
+
     try {
       const address = await Location.reverseGeocodeAsync(defaultUserLocation);
       const newFormattedAddress = address
         .map(
           (address) =>
-            `${address.streetNumber} ${address.street}, ${address.subregion}, ${address.city}, ${address.region}, ${address.country}`
+            `${address.streetNumber} ${address.street}, ${address.city}, ${address.region}, ${address.country}`
         )
         .join(', ');
-  
+
       setFormattedAddress(newFormattedAddress);
-      const subregion = address[0].subregion;
-      setDistrict(subregion); // Lưu thông tin quận vào biến trạng thái
       console.log('Current Address:', newFormattedAddress);
     } catch (error) {
       console.error('Error getting address:', error);
     }
   };
-  
 
   const { latitude = 0, longitude = 0 } = route.params || {};
   const customLatitude = latitude;
   const customLongitude = longitude;
-
-  const getCustomLocation = async (customLatitude, customLongitude) => {
-    navigation.navigate('Map');
-    try {
-      if (typeof customLatitude === 'number' && typeof customLongitude === 'number') {
-        const latitude = customLatitude;
-        const longitude = customLongitude;
-
-        setRegion({
-          latitude: latitude,
-          longitude: longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-
-        const address = await Location.reverseGeocodeAsync({
-          latitude: latitude,
-          longitude: longitude,
-        });
-
-        const newFormattedAddress = address
-          .map(
-            (address) =>
-              `${address.streetNumber} ${address.street}, ${address.subregion}, ${address.city}, ${address.region}, ${address.country}`
-          )
-          .join(', ');
-
-        setFormattedAddress(newFormattedAddress);
-        setDistrict(address[0].subregion); // Lưu thông tin quận vào biến trạng thái
-        console.log('Custom Location Address:', newFormattedAddress);
-      } else {
-        console.error('Invalid latitude or longitude values');
-      }
-    } catch (error) {
-      console.error('Error getting custom location:', error);
-    }
-  };
 
   const handleFindNearestCinema = async () => {
     try {
@@ -156,12 +126,11 @@ export default function AddPlace({ route, navigation }) {
           const newFormattedAddress = address
             .map(
               (address) =>
-                `${address.streetNumber} ${address.street}, ${address.subregion}, ${address.city}, ${address.region}, ${address.country}`
+                `${address.streetNumber} ${address.street}, ${address.city}, ${address.region}, ${address.country}`
             )
             .join(', ');
 
           setFormattedAddress(newFormattedAddress);
-          setDistrict(address[0].subregion); // Lưu thông tin quận vào biến trạng thái
           console.log('Nearest Cinema Address:', newFormattedAddress);
         } else {
           console.log('No cinema found');
@@ -182,7 +151,7 @@ export default function AddPlace({ route, navigation }) {
         cinemaData.forEach(cinema => {
           const { coordinates } = cinema.location;
           const distance = calculateDistance(currentLocation.latitude, currentLocation.longitude, coordinates[1], coordinates[0]);
-          if (distance <= 20000) { // Check if distance is less than or equal to 20km
+          if (distance <= 10000) { // Check if distance is less than or equal to 20km
             nearbyTheaters.push(cinema);
           }
         });
@@ -204,8 +173,8 @@ export default function AddPlace({ route, navigation }) {
           setRegion({
             latitude: currentLocation.latitude,
             longitude: currentLocation.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitudeDelta: 0.4,
+            longitudeDelta: 0.2,
           });
 
           const addresses = await Promise.all(nearbyTheaters.map(async (cinema) => {
@@ -214,7 +183,7 @@ export default function AddPlace({ route, navigation }) {
               longitude: cinema.location.coordinates[0],
             });
             return address.map(addr =>
-              `${addr.streetNumber} ${addr.street}, ${addr.subregion}, ${addr.city}, ${addr.region}, ${addr.country}`
+              `${addr.streetNumber} ${addr.street}, ${addr.city}, ${addr.region}, ${addr.country}`
             ).join(', ');
           }));
 
@@ -231,12 +200,29 @@ export default function AddPlace({ route, navigation }) {
     }
   };
 
+  // Function to calculate distance between two coordinates
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // metres
+    const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const d = R * c; // in metres
+    return d;
+  };
+
   const handleShowDirections = () => {
     if (nearestCinema && currentLocation) {
       const fetchRoute = async () => {
         const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a'; // Thay YOUR_API_KEY bằng API key của bạn
         const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${currentLocation.longitude},${currentLocation.latitude}&end=${nearestCinema.location.coordinates[0]},${nearestCinema.location.coordinates[1]}`;
-        
+
         try {
           const response = await axios.get(url);
           console.log('Đã lấy thông tin đường đi');
@@ -270,21 +256,35 @@ export default function AddPlace({ route, navigation }) {
     }
   };
 
-  // Function to calculate distance between two coordinates
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // metres
-    const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon1 - lon2) * Math.PI) / 180;
+  const handleFindCinemasInDistrict = () => {
+    if (district) {
+      const cinemas = cinemaData.filter(cinema => cinema.address.includes(district));
+      setCinemasInDistrict(cinemas);
 
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const districtInfo = districtData.features.find(feature => feature.properties.Ten_Huyen === district);
+      if (districtInfo) {
+        setDistrictBoundary(districtInfo.geometry.coordinates[0]);
+      }
 
-    const d = R * c; // in metres
-    return d;
+      if (cinemas.length > 0) {
+        const districtMarkers = cinemas.map(cinema => ({
+          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
+          title: cinema.cinema_name,
+          description: cinema.address,
+        }));
+        setTheaterMarkers(districtMarkers);
+        setRegion({
+          latitude: cinemas[0].location.coordinates[1],
+          longitude: cinemas[0].location.coordinates[0],
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        });
+      } else {
+        console.log('No cinemas found in the district');
+      }
+    } else {
+      console.log('Please enter a district');
+    }
   };
 
   const handleDeleteAll = () => {
@@ -292,78 +292,53 @@ export default function AddPlace({ route, navigation }) {
     setNearestCinema(null);
     setTheaterMarkers([]);
     setShowDirections(false);
-    setDistrictCinemas([]);
+    // setDistrictCinemas([]);
   };
 
-  const handleSearchByDistrict = async () => {
-    if (!district || district.trim() === '') {
-      console.log('Please enter a district');
-      return;
-    }
-  
-    try {
-      const filteredCinemas = cinemaData.filter(cinema => {
-        return cinema.location_name.toLowerCase().includes(district.toLowerCase());
-      });
-  
-      if (filteredCinemas.length > 0) {
-        setDistrictCinemas(filteredCinemas);
-  
-        // Set markers for filtered cinemas
-        const theaterMarkers = filteredCinemas.map(cinema => ({
-          coordinate: { latitude: cinema.latitude, longitude: cinema.longitude },
-          title: cinema.cinema_name,
-          description: cinema.location_name,
-        }));
-  
-        setTheaterMarkers(theaterMarkers);
-  
-        // Update region to the first cinema in the filtered list
-        setRegion({
-          latitude: filteredCinemas[0].latitude,
-          longitude: filteredCinemas[0].longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-  
-        console.log('Filtered Cinemas:', filteredCinemas);
-      } else {
-        console.log('No cinemas found in this district');
-      }
-    } catch (error) {
-      console.error('Error searching cinemas by district:', error);
-    }
-  };
-  
+  // const handleSearchAddress = async () => {
+  //   const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a';
+  //   const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${currentLocation.longitude},${currentLocation.latitude}&end=${nearestCinema.location.coordinates[0]},${nearestCinema.location.coordinates[1]}`;
 
+  //   try {
+  //     const response = await axios.get(url);
+  //     if (response.data.status === 'OK') {
+  //       const location = response.data.results[0].geometry.location;
+  //       setRegion({
+  //         latitude: location.lat,
+  //         longitude: location.lng,
+  //         latitudeDelta: 0.0922,
+  //         longitudeDelta: 0.0421,
+  //       });
+
+  //       // Add a marker for the searched address
+  //       setTheaterMarkers([{
+  //         coordinate: { latitude: location.lat, longitude: location.lng },
+  //         title: 'Searched Address',
+  //         description: searchAddress,
+  //       }]);
+  //     } else {
+  //       console.error('Error getting geocode:', response.data.status);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error getting geocode:', error);
+  //   }
+  // };
   return (
+    <ScrollView>
     <View style={styles.container}>
-      <ScrollView>
-
       <View >
+        <View>
           {region ? (
-              <View style={{ width: 400, height: 700, flex: 1,  }}>
-              <MapView style={{ width: 400, height: 700,  }} region={region} >
+            <View style={{ width: 400, height: 750 }}>
+              <MapView style={{ width: 400, height: 750 }} region={region}>
                 {/* Hiển thị Marker cho vị trí hiện tại */}
-                
                 {currentLocation && (
-                  <Marker 
+                  <Marker
                     coordinate={{ latitude: currentLocation.latitude, longitude: currentLocation.longitude }}
-                    title="Your Location"
+                    title="Vị trí của bạn"
                     description="You are here"
                   >
-                    <Image source={customIcon} style={{ width: 30, height: 30 }} />
-                  </Marker>
-                )}
-
-                {/* Hiển thị Marker cho rạp chiếu phim gần nhất */}
-                {nearestCinema && (
-                  <Marker 
-                    coordinate={{ latitude: nearestCinema.location.coordinates[1], longitude: nearestCinema.location.coordinates[0] }}
-                    title={nearestCinema.cinema_name}
-                    description={nearestCinema.location_name}
-                  >
-                    <Image source={cinemaIcon} style={{ width: 30, height: 30 }} />
+                  <Image source={customIcon} style={{ width: 50, height: 50 }} />
                   </Marker>
                 )}
 
@@ -374,26 +349,31 @@ export default function AddPlace({ route, navigation }) {
                     coordinate={marker.coordinate}
                     title={marker.title}
                     description={marker.description}
-                  >
-                    <Image source={cinemaIcon} style={{ width: 30, height: 30 }} />
-                    </Marker>
+                  />
                 ))}
-
-                  {/* Hiển thị Marker cho các rạp phim trong quận */}
-                  {districtCinemas.map((cinema, index) => (
-                    <Marker
-                      key={index}
-                      coordinate={{ latitude: cinema.latitude, longitude: cinema.longitude }}
-                      title={cinema.cinema_name}
-                      description={cinema.location_name}
-                    >
-                    <Image source={cinemaIcon} style={{ width: 30, height: 30 }} />
-                      </Marker>
-                  ))}
+                {/* Hiển thị Marker cho rạp chiếu phim gần nhất */}
+                {nearestCinema && (
+                  <Marker
+                    coordinate={{ latitude: nearestCinema.location.coordinates[1], longitude: nearestCinema.location.coordinates[0] }}
+                    title={nearestCinema.cinema_name}
+                    description={nearestCinema.location_name}
+                  >
+                  <Image source={cinemaIcon} style={{ width: 50, height: 50 }} />
+                  </Marker>
+                )}
+                  {/* Hiển thị các rạp phim trong một quận */}
+                {districtBoundary && (
+                  <Polygon
+                    coordinates={districtBoundary.map(coord => ({ latitude: coord[1], longitude: coord[0] }))}
+                    strokeColor="#FF0000"
+                    fillColor="rgba(255,0,0,0.2)"
+                    strokeWidth={2}
+                  />
+                )}
 
                 {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất */}
                 {showDirections && (
-                  <Polyline coordinates={routeCoords} strokeColor="#3498db" strokeWidth={3} />
+                  <Polyline coordinates={routeCoords} strokeColor="#7f0d00" strokeWidth={3} />
                 )}
               </MapView>
             </View>
@@ -406,42 +386,49 @@ export default function AddPlace({ route, navigation }) {
           )}
         </View>
         <View style={{position:'absolute', width:'100%', flexDirection: 'row', alignItems: 'center'}}>
-            <TextInput
+              <TextInput
                 style={styles.input}
-                placeholder="Search..."
-                // onChange={handleSearchByDistrict}
-            />
-            <TouchableOpacity style={styles.greenBorder} onPress={getCurrentLocation}><Image source={require('../assets/placeholder.png')} style={styles.image2} /></TouchableOpacity>
+                placeholder="Search by Address"
+                value={searchAddress}
+                onChangeText={text => setSearchAddress(text)}
+              />
+            <TouchableOpacity style={styles.greenBorder} onPress={handleFindNearestCinema}><Image source={require('../assets/cinema_icon.png')} style={styles.image2} /></TouchableOpacity>
             <TouchableOpacity style={styles.greenBorder} onPress={handleShowDirections}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
 
+        </View>
+        <View style={{position:'absolute', bottom: 110, right: 10 }}>
+        <TouchableOpacity style={styles.greenBorder} onPress={getCurrentLocation}><Image source={require('../assets/placeholder.png')} style={styles.image2} /></TouchableOpacity>
+        </View>
+        <View style={{position:'absolute', bottom: 110, flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 5 }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Map')}>
+            <View style={styles.greenBorder}>
+              <Image source={require('../assets/google-maps.png')} style={styles.image2} />
+            </View>
+          </TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', padding: 10, position:'absolute', marginTop: 60, }}>
           <ScrollView horizontal>
             <TouchableOpacity onPress={handleFindNearestCinema} style={styles.menu}>
-              <Text>Rạp chiếu phim gần bạn nhất</Text>
+              <Text style={{color:"white", fontWeight: 'bold'}}>Các rạp chiếu phim gần bạn nhất</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleFindNearbyMovieTheaters} style={styles.menu}>
-              <Text>Các rạp phim trong bán kính 10km</Text>
+              <Text style={{color:"white", fontWeight: 'bold'}}>Rạp phim có đánh giá tốt nhất</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.menu}>
-              <Text></Text>
+              <Text style={{color:"white", fontWeight: 'bold'}}>Tìm rạp phim trong khu vực quận</Text>
             </TouchableOpacity>
             {/* Thêm tùy chọn khác nếu cần */}
           </ScrollView>
         </View>
-        <View style={{ marginTop: 70, flexDirection: 'row', justifyContent: 'space-between', margin: 15, marginTop: 20 }}>
-          <TouchableOpacity onPress={() => getCustomLocation(customLatitude, customLongitude)}>
-            <View style={styles.greenBorder}>
-              <Image source={require('../assets/maps.png')} style={styles.image2} />
-              <Text style={styles.text}>Pick on Map</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={{position:'absolute', bottom: 110, left:200, backgroundColor: '#7f0d00', borderRadius: 10}}>
+            <TouchableOpacity title="xóa" onPress={handleDeleteAll} >
+              <Text style={{color:"white", fontWeight: 'bold', padding: 5}}>Xóa</Text>
+            </TouchableOpacity>
+          </View>
+
       </View>
-      <View style={{ marginTop: 20 }}>
-        <Button title="Delete All" onPress={handleDeleteAll}></Button>
-      </View>
-      </ScrollView>
     </View>
+    </ScrollView>
   );
 }
 
@@ -463,12 +450,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   greenBorder: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: '#7f0d00',
     width: 50,
     height: 50,
     backgroundColor: '#eee',
-    borderRadius: 5,
+    borderRadius: 10,
+    marginTop: 10,
+    marginLeft: 5,
+    alignItems:'center',
+  },
+  greenBorder1: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#eee',
+    borderRadius: 10,
     marginTop: 10,
     marginLeft: 5,
     alignItems:'center',
@@ -483,15 +479,14 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     marginTop: 10,
-
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth: 2,
+    borderColor: '#7f0d00',
     backgroundColor: '#eee',
     padding: 10,
     width: '68%',
-    borderRadius: 5,
+    borderRadius: 10,
     marginTop: 10,
     marginLeft: 10,
     height: 50,
@@ -501,7 +496,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, 
     paddingVertical: 5,
      marginRight: 10, 
-     backgroundColor: 'white', 
-     borderRadius: 5 ,
+     backgroundColor: '#7f0d00', 
+     borderRadius: 20,
   }
+
 });

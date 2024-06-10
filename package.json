@@ -1,6 +1,7 @@
 {
-  "name": "bai1",
+  "name": "combined-project",
   "version": "1.0.0",
+  "description": "A combined project of react-leaflet-with-marker-cluster and bai1",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -11,7 +12,10 @@
   "dependencies": {
     "@react-native-community/geolocation": "^3.1.0",
     "@react-navigation/bottom-tabs": "^6.5.11",
+    "@react-navigation/native": "^6.1.17",
     "@react-navigation/native-stack": "^6.9.17",
+    "@react-navigation/stack": "^6.3.29",
+    "@turf/turf": "^7.0.0",
     "axios": "^1.7.2",
     "expo": "~49.0.15",
     "expo-av": "~13.4.1",
@@ -25,18 +29,25 @@
     "expo-sqlite": "~11.3.3",
     "expo-status-bar": "~1.6.0",
     "express": "^4.19.2",
+    "js-priority-queue": "^0.1.5",
+    "leaflet": "1.9.3",
     "mongodb": "^6.5.0",
     "mongoose": "^8.3.1",
-    "node_module": "^0.0.0",
     "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-leaflet": "4.2.0",
+    "react-leaflet-cluster": "2.0.0",
     "react-native": "0.72.10",
+    "react-native-fs": "^2.20.0",
     "react-native-maps": "1.7.1",
     "react-native-maps-directions": "^1.9.0",
     "react-native-modal": "^13.0.1",
-    "react-native-sqlite-storage": "^6.0.1"
+    "react-native-sqlite-storage": "^6.0.1",
+    "react-scripts": "4.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
+  "keywords": [],
   "private": true
 }
