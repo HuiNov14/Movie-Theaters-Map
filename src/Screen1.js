@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, SafeAreaView, Text, FlatList, StyleSheet, Image, TextInput, TouchableOpacity } from "react-native";
 import * as Location from "expo-location";
-import cinemaData from '../src/db.json';
+import cinemaData from './data/db.json';
 
 const Screen1 = ({ route, navigation }) => {
   const [userLocation, setUserLocation] = useState(null);

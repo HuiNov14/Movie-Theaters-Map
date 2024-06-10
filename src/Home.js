@@ -2,10 +2,13 @@ import { StyleSheet, Text, View, Image, TouchableOpacity, Button, Dimensions, Sc
 import React, { useState, useEffect } from 'react';
 import MapView, { Marker, Polyline, Polygon } from 'react-native-maps';
 import * as Location from 'expo-location';
-import cinemaData from '../src/db.json';
+import cinemaData from './data/db.json';
 import axios from 'axios';
-import districtData from './districtPolygons.json';
+import districtData from './data/districtPolygons.json';
+import jsonData from './data/export2.json';
+import { parseData, dijkstra } from './Dijkstra'; 
 
+const { nodes, edges } = parseData(jsonData);
 const customIcon = require('../assets/placeholder.png'); //Icon Map
 const cinemaIcon = require('../assets/cinema.png'); //Icon Map
 
@@ -41,6 +44,7 @@ export default function Home({ route, navigation }) {
   const [modalVisible2, setModalVisible2] = useState(false);
   const [modalVisible3, setModalVisible3] = useState(false);
   const [ratingThreshold, setRatingThreshold] = useState('');
+  const [functionX, setFunctionX] = useState(false);
 
   //
   useEffect(() => {
@@ -399,15 +403,6 @@ export default function Home({ route, navigation }) {
     }
   };
 
-  //Xóa
-  const handleDeleteAll = () => {
-    setCurrentLocation(null);
-    setNearestCinema(null);
-    setTheaterMarkers([]);
-    setShowDirections(false);
-    setDistrictBoundary(null);
-  };
-
   //Function: search rạp phim bất kỳ 
   const handleSearchAddress = async () => {
     const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a';
@@ -436,6 +431,31 @@ export default function Home({ route, navigation }) {
     } catch (error) {
       console.error('Error getting geocode:', error);
     }
+  };
+
+  //Function x: Thuật toán Dijkstra
+  const [start, setStart] = useState('106.8021132,10.870311');
+  const [end, setEnd] = useState('106.8000559,10.8752837');
+  const [path, setPath] = useState([]);
+
+  const handleFindPath = () => {
+    if (nodes[start] && nodes[end]) {
+      const shortestPath = dijkstra(start, end, nodes, edges);
+      setPath(shortestPath);
+      setFunctionX(true);
+    } else {
+      Alert.alert('Invalid start or end point');
+    }
+  };
+
+  //Xóa
+  const handleDeleteAll = () => {
+    setCurrentLocation(null);
+    setNearestCinema(null);
+    setTheaterMarkers([]);
+    setShowDirections(false);
+    setDistrictBoundary(null);
+    setFunctionX(false);
   };
 
   return (
@@ -492,6 +512,30 @@ export default function Home({ route, navigation }) {
                   {showDirections && (
                     <Polyline coordinates={routeCoords} strokeColor="#7f0d00" strokeWidth={3} />
                   )}
+
+                  {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất UIT*/}
+                  {functionX && (<Polyline
+                    coordinates={path.map(coord => ({ latitude: coord[1], longitude: coord[0] }))}
+                    strokeColor="#7f0d00"
+                    strokeWidth={3}
+                  />)}
+                  {functionX && (
+                    <Marker
+                      coordinate={{ latitude: 10.870311, longitude: 106.8021132 }}
+                      title="Vị trí của bạn"
+                      description="You are here"
+                    >
+                      <Image source={customIcon} style={{ width: 50, height: 50 }} />
+                    </Marker>
+                  )}
+                  {functionX && (
+                    <Marker
+                      coordinate={{ latitude: 10.8752837, longitude: 106.8000559 }}
+                      title="Vị trí của rạp phim"
+                    >
+                      <Image source={cinemaIcon} style={{ width: 50, height: 50 }} />
+                    </Marker>
+                  )}
                 </MapView>
               </View>
             ) : (
@@ -523,7 +567,7 @@ export default function Home({ route, navigation }) {
             <TouchableOpacity style={styles.greenBorder} onPress={getCurrentLocation}><Image source={require('../assets/placeholder.png')} style={styles.image2} /></TouchableOpacity>
           </View>
           <View style={{ position: 'absolute', bottom: '6%', flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 5 }}>
-            <TouchableOpacity onPress={() => navigation.navigate('Map')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Locate')}>
               <View style={styles.greenBorder}>
                 <Image source={require('../assets/google-maps.png')} style={styles.image2} />
               </View>
@@ -542,6 +586,9 @@ export default function Home({ route, navigation }) {
               </TouchableOpacity>
               <TouchableOpacity onPress={handleFindCinemasInMall} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm các rạp phim thuộc trung tâm thương mại</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleFindPath} style={styles.menu}>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim gần UIT</Text>
               </TouchableOpacity>
               {/* Thêm tùy chọn khác nếu cần */}
             </ScrollView>

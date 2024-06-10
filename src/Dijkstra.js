@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, Button, Alert } from 'react-native';
-import MapView, { Polyline } from 'react-native-maps';
-import * as turf from '@turf/turf';
-import jsonData from './export.json';
+// utils.js
 
-const parseData = (data) => {
+import * as turf from '@turf/turf';
+
+export const parseData = (data) => {
   const nodes = {};
   const edges = [];
 
@@ -29,8 +27,6 @@ const parseData = (data) => {
 
   return { nodes, edges };
 };
-
-const { nodes, edges } = parseData(jsonData);
 
 class PriorityQueue {
   constructor() {
@@ -64,7 +60,7 @@ class PriorityQueue {
   }
 }
 
-const dijkstra = (startNode, endNode, nodes, edges) => {
+export const dijkstra = (startNode, endNode, nodes, edges) => {
   let distances = {};
   let prev = {};
   let pq = new PriorityQueue();
@@ -109,63 +105,3 @@ const dijkstra = (startNode, endNode, nodes, edges) => {
 
   return [];
 };
-
-const Map2 = () => {
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
-  const [path, setPath] = useState([]);
-
-  const handleFindPath = () => {
-    if (nodes[start] && nodes[end]) {
-      const shortestPath = dijkstra(start, end, nodes, edges);
-      setPath(shortestPath);
-    } else {
-      Alert.alert('Invalid start or end point');
-    }
-  };
-
-  return (
-    <View style={styles.container}>
-      <MapView style={styles.map}>
-        <Polyline
-          coordinates={path.map(coord => ({ latitude: coord[1], longitude: coord[0] }))}
-          strokeColor="#000"
-          strokeWidth={6}
-        />
-      </MapView>
-      <TextInput
-        style={styles.input}
-        placeholder="Start (e.g., 106.8052434,10.8750419)"
-        onChangeText={text => setStart(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="End (e.g., 106.8046673,10.8760654)"
-        onChangeText={text => setEnd(text)}
-      />
-      <Button title="Find Path" onPress={handleFindPath} />
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    width: '80%',
-    paddingLeft: 10,
-  },
-  map: {
-    width: '100%',
-    height: '80%',
-  },
-});
-
-export default Map2;

@@ -1,36 +1,40 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Button } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { StatusBar } from 'expo-status-bar';
+import React , { useContext }from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+const Stack = createNativeStackNavigator();
+import HomeScreen from './Home';
+import Screen1 from './Screen1';
+import Locate from './Locate';
 
 export default function Map({ navigation }) {
-  const [selectedLocation, setSelectedLocation] = useState(null);
-
-  const handleMapPress = (event) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setSelectedLocation({ latitude, longitude });
-  };
-
-  const handleSaveLocation = () => {
-    if (selectedLocation) {
-      navigation.navigate('HomeScreen', { selectedLocation });
-    }
-  };
-
   return (
-    <View style={styles.container}>
-      <MapView style={styles.map} onPress={handleMapPress}>
-        {selectedLocation && <Marker coordinate={selectedLocation} />}
-      </MapView>
-      <Button title="Save Location" onPress={handleSaveLocation} />
-    </View>
+    <Stack.Navigator>
+      <Stack.Screen
+        name="HomeScreen"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="Screen1" component={Screen1} options={{ headerShown: false }}/>
+      <Stack.Screen name="Locate" component={Locate} />
+    </Stack.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  map: {
-    flex: 1,
+  buttonAdd: {
+  
+    marginRight:15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  add: {
+   height:30,
+   width:30,
   },
 });

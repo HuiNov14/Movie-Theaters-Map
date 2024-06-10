@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import Places from './Places';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Setting from './Setting';
+import Map from './Map';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -19,10 +19,10 @@ const Main = ({ navigation }) => {
               iconName = focused
                 ? require('../assets/location.png')
                 : require('../assets/location.png');
-            } else if (route.name === 'Setting') {
+            } else if (route.name === 'Map') {
               iconName = focused
-                ? require('../assets/setting.png')
-                : require('../assets/setting.png');
+                ? require('../assets/map.png')
+                : require('../assets/map.png');
             }
             return (
               <Image
@@ -34,7 +34,7 @@ const Main = ({ navigation }) => {
         })}
       >
         <Tab.Screen name="Places"component={Places} options={{ headerShown: false }} />
-        <Tab.Screen name="Setting" component={Setting} options={{ headerShown: false }}/>
+        <Tab.Screen name="Map" component={Map} options={{ headerShown: false }}/>
        
       </Tab.Navigator>
 
