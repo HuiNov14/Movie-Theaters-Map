@@ -3,14 +3,9 @@ import React , { useContext }from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
-import AddPlace from './AddPlace';
 import HomeScreen from '../src2/Home';
 import Screen1 from '../src2/Screen1';
-import Screen2 from '../src2/Screen2';
-import Screen3 from '../src2/Screen3';
-import Screen4 from '../src2/Screen4';
-import Screen5 from '../src2/Screen5';
-import Screen6 from '../src2/Screen6';
+import Map from './Map';
 
 export default function Setting({ navigation }) {
   return (
@@ -18,13 +13,10 @@ export default function Setting({ navigation }) {
       <Stack.Screen
         name="HomeScreen"
         component={HomeScreen}
+        options={{ headerShown: false }}
       />
-      <Stack.Screen name="Screen1" component={Screen1} />
-      <Stack.Screen name="Screen2" component={Screen2} />
-      <Stack.Screen name="Screen3" component={Screen3} />
-      <Stack.Screen name="Screen4" component={Screen4} />
-      <Stack.Screen name="Screen5" component={Screen5} />
-      <Stack.Screen name="Screen6" component={Screen6} />
+      <Stack.Screen name="Screen1" component={Screen1} options={{ headerShown: false }}/>
+      <Stack.Screen name="Map" component={Map} />
     </Stack.Navigator>
   );
 }

@@ -12,7 +12,7 @@ export default function Map({ navigation }) {
 
   const handleSaveLocation = () => {
     if (selectedLocation) {
-      navigation.navigate('Screen2', { selectedLocation });
+      navigation.navigate('HomeScreen', { selectedLocation });
     }
   };
 

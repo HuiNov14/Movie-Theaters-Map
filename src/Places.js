@@ -5,8 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
 import AddPlace from './AddPlace';
 import MyPlaces from './MyPlaces';
-import Map from './Map';
-
 
 export default function Places({ navigation }) {
   return (
@@ -23,7 +21,6 @@ export default function Places({ navigation }) {
         }}
       />
       <Stack.Screen name="Find the movie theater" component={AddPlace} />
-      <Stack.Screen name="Map" component={Map} />
     </Stack.Navigator>
     
   );
