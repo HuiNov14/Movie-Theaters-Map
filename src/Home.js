@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity, Button, Dimensions, ScrollView, TextInput, Modal, TurboModuleRegistry } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import MapView, { Marker, Polyline, Polygon } from 'react-native-maps';
+import MapView, { Marker, Polyline, Polygon, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import cinemaData from './data/db.json';
 import axios from 'axios';
 import districtData from './data/districtPolygons.json';
 import jsonData from './data/export2.json';
 import jsonTrafficData from './data/updated_data.json'
-import { parseData, dijkstra } from './Dijkstra'; 
+import { parseData, dijkstra } from './Dijkstra';
 
 const { nodes, edges } = parseData(jsonData);
 const customIcon = require('../assets/placeholder.png'); //Icon Map
@@ -46,12 +46,15 @@ export default function Home({ route, navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisible2, setModalVisible2] = useState(false);
   const [modalVisible3, setModalVisible3] = useState(false);
+  const [modalVisible4, setModalVisible4] = useState(false);
+  const [roadName, setRoadName] = useState('');
   const [ratingThreshold, setRatingThreshold] = useState('');
   const [functionX, setFunctionX] = useState(false);
   const [optimalRouteCoords, setOptimalRouteCoords] = useState([]);
   const [showOptimizedDirections, setShowOptimizedDirections] = useState(false);
   const [trafficLights, setTrafficLights] = useState([]);
   const [trafficShow, setTrafficShow] = useState(false);
+  const [showCircle, setShowCircle] = useState(false);
 
   //
   useEffect(() => {
@@ -89,13 +92,10 @@ export default function Home({ route, navigation }) {
 
   //Function: Lấy vị trí hiện tại
   const getCurrentLocation = async () => {
-    setNearestCinema(null);
-    setTheaterMarkers([]);
     setShowDirections(false);
-    setDistrictBoundary(null);
 
     // lấy vị trí mặc định nếu xài máy ảo 
-    setCurrentLocation(defaultUserLocation); 
+    setCurrentLocation(defaultUserLocation);
     setRegion({
       latitude: defaultUserLocation.latitude,
       longitude: defaultUserLocation.longitude,
@@ -137,12 +137,13 @@ export default function Home({ route, navigation }) {
   useEffect(() => {
     // Assuming jsonTrafficData is an array of traffic light objects
     setTrafficLights(jsonTrafficData);
-}, []);
+  }, []);
 
   //Function: Tìm rạp phim gần nhất
   const handleFindNearestCinema = async () => {
     setNearestCinema(null);
     setTheaterMarkers([]);
+    setShowCircle(false);
     setShowDirections(false);
     setDistrictBoundary(null);
     try {
@@ -198,6 +199,7 @@ export default function Home({ route, navigation }) {
   const handleFindNearbyMovieTheaters = async () => {
     setNearestCinema(null);
     setTheaterMarkers([]);
+    setShowCircle(false);
     setShowDirections(false);
     setDistrictBoundary(null);
     try {
@@ -221,6 +223,7 @@ export default function Home({ route, navigation }) {
           }));
 
           setTheaterMarkers(theaterMarkers);
+          setShowCircle(true);
 
           const addresses = await Promise.all(nearbyTheaters.map(async (cinema) => {
             const address = await Location.reverseGeocodeAsync({
@@ -237,7 +240,6 @@ export default function Home({ route, navigation }) {
         } else {
           console.log('No nearby movie theaters found');
         }
-        setRadius('');
       } else {
         console.log('Current location or radius not available');
         setRadius('');
@@ -268,6 +270,7 @@ export default function Home({ route, navigation }) {
   //Function: Tìm đường đi ngắn nhất 
   const handleShowDirections = () => {
     setTheaterMarkers([]);
+    setShowCircle(false);
     setShowDirections(false);
     setDistrictBoundary(null);
     if (nearestCinema && currentLocation) {
@@ -308,125 +311,21 @@ export default function Home({ route, navigation }) {
     }
   };
 
-  //Function 2: Tìm các rạp phim nằm trong 1 khu vực quận 
-  const handleFindCinemasInDistrict = () => {
-    setNearestCinema(null);
-    setTheaterMarkers([]);
-    setShowDirections(false);
-    setDistrictBoundary(null);
-    if (district) {
-      const cinemas = cinemaData.filter(cinema => cinema.address.includes(district));
-      setCinemasInDistrict(cinemas);
-
-      const districtInfo = districtData.features.find(feature => feature.properties.Ten_Huyen === district);
-      if (districtInfo) {
-        setDistrictBoundary(districtInfo.geometry.coordinates[0]);
-      }
-
-      if (cinemas.length > 0) {
-        const districtMarkers = cinemas.map(cinema => ({
-          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
-          title: cinema.cinema_name,
-          description: cinema.address,
-        }));
-        setTheaterMarkers(districtMarkers);
-        setRegion({
-          latitude: cinemas[0].location.coordinates[1],
-          longitude: cinemas[0].location.coordinates[0],
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-      } else {
-        console.log('No cinemas found in the district');
-      }
-      setDistrict('');
-    } else {
-      setDistrict('');
-      console.log('Please enter a district');
-    }
-  };
-
-  //Function 3: Tìm các rạp phim có rating cao 
-  const handleFindCinemasInDistrict2 = () => {
-    setNearestCinema(null);
-    setTheaterMarkers([]);
-    setShowDirections(false);
-    setDistrictBoundary(null);
-    if (ratingThreshold) {
-      const cinemas = cinemaData.filter(cinema => cinema.address.includes(district) && cinema.rating > ratingThreshold);
-      setCinemasInDistrict(cinemas);
-
-      const districtInfo = districtData.features.find(feature => feature.properties.Ten_Huyen === district);
-      if (districtInfo) {
-        setDistrictBoundary(districtInfo.geometry.coordinates[0]);
-      }
-
-      if (cinemas.length > 0) {
-        const districtMarkers = cinemas.map(cinema => ({
-          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
-          title: cinema.cinema_name,
-          description: cinema.address,
-        }));
-        setTheaterMarkers(districtMarkers);
-        setRegion({
-          latitude: cinemas[0].location.coordinates[1],
-          longitude: cinemas[0].location.coordinates[0],
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-      } else {
-        console.log('No cinemas found in the district');
-      }
-      setRatingThreshold('');
-    } else {
-      setRatingThreshold('');
-      console.log('Please enter a district');
-    }
-  };
-
-  //Function 4: Tìm các rạp phim nằm trong trung tâm thương mai
-  const handleFindCinemasInMall = () => {
-    setNearestCinema(null);
-    setTheaterMarkers([]);
-    setShowDirections(false);
-    setDistrictBoundary(null);
-    if (true) {
-      console.log(district);
-      const cinemas = cinemaData.filter(cinema => cinema.cinema_name.includes('CGV'));
-      setCinemasInDistrict(cinemas);
-
-      if (cinemas.length > 0) {
-        const districtMarkers = cinemas.map(cinema => ({
-          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
-          title: cinema.cinema_name,
-          description: cinema.address,
-        }));
-        setTheaterMarkers(districtMarkers);
-        setRegion({
-          latitude: cinemas[0].location.coordinates[1],
-          longitude: cinemas[0].location.coordinates[0],
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-      } else {
-        console.log('No cinemas found in the district');
-      }
-      setDistrict('');
-    }
-  };
-
+  //Fucntion: Tìm đường đi ngắn nhất (có tối ưu đèn giao thông)
   const countTrafficLights = (route) => {
     return route.reduce((count, point) => {
       const lat = point[1];
       const lon = point[0];
-      return count + trafficLights.filter(light => 
+      return count + trafficLights.filter(light =>
         Math.abs(light.latitude - lat) < 0.0005 && Math.abs(light.longitude - lon) < 0.0005
       ).length;
     }, 0);
   };
-
   const handleFindOptimizedPath = () => {
+    setTheaterMarkers([]);
+    setShowCircle(false);
     setShowDirections(false);
+    setDistrictBoundary(null);
     if (nearestCinema && currentLocation) {
       const fetchRoute = async () => {
         const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a'; // Thay YOUR_API_KEY bằng API key của bạn
@@ -434,6 +333,7 @@ export default function Home({ route, navigation }) {
 
         try {
           const response = await axios.get(url);
+          console.log('Đã lấy thông tin đường đi (đèn giao thông)');
           if (response.data && response.data.features && response.data.features.length > 0) {
             const routes = response.data.features;
             let minTrafficLights = Infinity;
@@ -472,6 +372,121 @@ export default function Home({ route, navigation }) {
       console.log('Nearest cinema or current location not available');
     }
   };
+
+  //Function 2: Tìm các rạp phim nằm trong 1 khu vực quận 
+  const handleFindCinemasInDistrict = () => {
+    setNearestCinema(null);
+    setTheaterMarkers([]);
+    setShowCircle(false);
+    setShowDirections(false);
+    setDistrictBoundary(null);
+    if (district) {
+      const cinemas = cinemaData.filter(cinema => cinema.address.includes(district));
+      setCinemasInDistrict(cinemas);
+
+      const districtInfo = districtData.features.find(feature => feature.properties.Ten_Huyen === district);
+      if (districtInfo) {
+        setDistrictBoundary(districtInfo.geometry.coordinates[0]);
+      }
+
+      if (cinemas.length > 0) {
+        const districtMarkers = cinemas.map(cinema => ({
+          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
+          title: cinema.cinema_name,
+          description: cinema.address,
+        }));
+        setTheaterMarkers(districtMarkers);
+        setRegion({
+          latitude: cinemas[0].location.coordinates[1],
+          longitude: cinemas[0].location.coordinates[0],
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        });
+      } else {
+        console.log('No cinemas found in the district');
+      }
+      setDistrict('');
+    } else {
+      setDistrict('');
+      console.log('Please enter a district');
+    }
+  };
+
+  //Function 3: Tìm các rạp phim có rating cao 
+  const handleFindCinemasInDistrict2 = () => {
+    setNearestCinema(null);
+    setTheaterMarkers([]);
+    setShowCircle(false);
+    setShowDirections(false);
+    setDistrictBoundary(null);
+    if (ratingThreshold) {
+      const cinemas = cinemaData.filter(cinema => cinema.address.includes(district) && cinema.rating > ratingThreshold);
+      setCinemasInDistrict(cinemas);
+
+      const districtInfo = districtData.features.find(feature => feature.properties.Ten_Huyen === district);
+      if (districtInfo) {
+        setDistrictBoundary(districtInfo.geometry.coordinates[0]);
+      }
+
+      if (cinemas.length > 0) {
+        const districtMarkers = cinemas.map(cinema => ({
+          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
+          title: cinema.cinema_name,
+          description: cinema.address,
+        }));
+        setTheaterMarkers(districtMarkers);
+        setRegion({
+          latitude: cinemas[0].location.coordinates[1],
+          longitude: cinemas[0].location.coordinates[0],
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        });
+      } else {
+        console.log('No cinemas found in the district');
+      }
+      setRatingThreshold('');
+    } else {
+      setRatingThreshold('');
+      console.log('Please enter a district');
+    }
+  };
+
+  //Function 4: Tìm các rạp phim nằm trong trung tâm thương mai
+  const handleFindCinemasInMall = () => {
+    setNearestCinema(null);
+    setTheaterMarkers([]);
+    setShowCircle(false);
+    setShowDirections(false);
+    setDistrictBoundary(null);
+    if (true) {
+      console.log(district);
+      const cinemas = cinemaData.filter(cinema => cinema.cinema_name.includes('CGV'));
+      setCinemasInDistrict(cinemas);
+
+      if (cinemas.length > 0) {
+        const districtMarkers = cinemas.map(cinema => ({
+          coordinate: { latitude: cinema.location.coordinates[1], longitude: cinema.location.coordinates[0] },
+          title: cinema.cinema_name,
+          description: cinema.address,
+        }));
+        setTheaterMarkers(districtMarkers);
+        setRegion({
+          latitude: cinemas[0].location.coordinates[1],
+          longitude: cinemas[0].location.coordinates[0],
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        });
+      } else {
+        console.log('No cinemas found in the district');
+      }
+      setDistrict('');
+    }
+  };
+
+  //Function 6: Tìm kiếm rạp phim gần một đoạn đường
+  const handleFindCinemasNearRoad = async () => {
+    console.log('F6');
+  };
   
   //Function x: Thuật toán Dijkstra
   const [start, setStart] = useState('106.8021132,10.870311');
@@ -493,6 +508,7 @@ export default function Home({ route, navigation }) {
     setCurrentLocation(null);
     setNearestCinema(null);
     setTheaterMarkers([]);
+    setShowCircle(false);
     setShowDirections(false);
     setDistrictBoundary(null);
     setFunctionX(false);
@@ -502,7 +518,7 @@ export default function Home({ route, navigation }) {
     setTrafficShow(!trafficShow);
     setTrafficLights(jsonTrafficData);
   };
-  
+
   return (
     <ScrollView>
       <View style={styles.container}>
@@ -521,7 +537,14 @@ export default function Home({ route, navigation }) {
                       <Image source={customIcon} style={{ width: 50, height: 50 }} />
                     </Marker>
                   )}
-
+                  {showCircle && (
+                    <Circle
+                      center={currentLocation}
+                      radius={radius * 500}
+                      strokeColor="#FF0000"
+                      fillColor="rgba(255,0,0,0.3)"
+                    />
+                  )}
                   {/* Hiển thị Markers cho các rạp chiếu phim gần đó */}
                   {theaterMarkers.map((marker, index) => (
                     <Marker
@@ -559,14 +582,14 @@ export default function Home({ route, navigation }) {
                     <Polyline coordinates={routeCoords} strokeColor="#7f0d00" strokeWidth={3} />
                   )}
 
-                    {/* Hiển thị tuyến đường */}
-                    {showOptimizedDirections && (
-                      <Polyline
-                        coordinates={optimalRouteCoords}
-                        strokeColor="#7f0d00"
-                        strokeWidth={3}
-                      />
-                    )}
+                  {/* Hiển thị tuyến đường */}
+                  {showOptimizedDirections && (
+                    <Polyline
+                      coordinates={optimalRouteCoords}
+                      strokeColor="#7f0d00"
+                      strokeWidth={3}
+                    />
+                  )}
 
                   {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất UIT*/}
                   {functionX && (<Polyline
@@ -598,9 +621,16 @@ export default function Home({ route, navigation }) {
                       coordinate={{ latitude: light.latitude, longitude: light.longitude }}
                       title={`Đèn giao thông ${light.id}`}
                     >
-                    <Image source={trafficIcon} style={{ width: 25, height: 25 }} />
+                      <Image source={trafficIcon} style={{ width: 25, height: 25 }} />
                     </Marker>
                   )))}
+                  {routeCoords.length > 0 && (
+                    <Polyline
+                      coordinates={routeCoords}
+                      strokeWidth={4}
+                      strokeColor="blue"
+                    />
+                  )}
                 </MapView>
               </View>
             ) : (
@@ -617,6 +647,7 @@ export default function Home({ route, navigation }) {
               onPress={() => {
                 setNearestCinema(null);
                 setTheaterMarkers([]);
+                setShowCircle(false);
                 setShowDirections(false);
                 setDistrictBoundary(null);
                 navigation.navigate('Screen1')
@@ -625,7 +656,7 @@ export default function Home({ route, navigation }) {
               <Text style={{ paddingTop: 3 }}>Tìm rạp phim...</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.greenBorder} onPress={handleFindNearestCinema}><Image source={require('../assets/cinema_icon.png')} style={styles.image2} /></TouchableOpacity>
-            <TouchableOpacity style={styles.greenBorder} onPress={handleFindOptimizedPath}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
+            <TouchableOpacity style={styles.greenBorder} onPress={() => { trafficShow ? handleFindOptimizedPath() : handleShowDirections() }}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
 
           </View>
           <View style={{ position: 'absolute', bottom: '16%', right: 10 }}>
@@ -654,6 +685,9 @@ export default function Home({ route, navigation }) {
               </TouchableOpacity>
               <TouchableOpacity onPress={handleShowTrafficLights} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>{trafficShow ? 'Ẩn đèn giao thông' : 'Hiển thị đèn giao thông'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleFindCinemasNearRoad} style={styles.menu}>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim gần đoạn đường</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleFindPath} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim gần UIT</Text>
@@ -740,6 +774,26 @@ export default function Home({ route, navigation }) {
             </View>
           </View>
         </Modal>
+
+        {/* <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible4}
+          onRequestClose={() => setModalVisible4(false)}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalView}>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập tên đường đi"
+                value={roadName}
+                onChangeText={setRoadName}
+              />
+              <Button title="Tìm kiếm" onPress={handleFindCinemasNearRoad} />
+              <Button title="Đóng" onPress={() => setModalVisible4(false)} />
+            </View>
+          </View>
+        </Modal> */}
 
         <Modal
           animationType="slide"
