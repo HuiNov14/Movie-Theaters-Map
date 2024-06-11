@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 export default function Locate({ navigation }) {
+  const defaultLocation = {
+    latitude: 10.859313791905437,
+    longitude: 106.60419726148713,
+    latitudeDelta: 0.722,
+    longitudeDelta: 0.421,
+  };
+
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [region, setRegion] = useState(defaultLocation);
+
+  useEffect(() => {
+    if (selectedLocation) {
+      setRegion({
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+    }
+  }, [selectedLocation]);
 
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
@@ -18,10 +37,18 @@ export default function Locate({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <MapView style={styles.map} onPress={handleMapPress}>
+      <MapView 
+        style={styles.map} 
+        region={region} 
+        onPress={handleMapPress}
+      >
         {selectedLocation && <Marker coordinate={selectedLocation} />}
       </MapView>
-      <Button title="Save Location" onPress={handleSaveLocation} />
+        <View style={{position:'absolute', bottom:'2%' }}>
+        <TouchableOpacity  onPress={handleSaveLocation}>
+          <Text style={{ backgroundColor: "#7f0d00", color: "white", fontWeight: 'bold', padding: 5, borderRadius:15, left:180 }}>Lưu địa chỉ</Text>
+        </TouchableOpacity>
+        </View>
     </View>
   );
 }

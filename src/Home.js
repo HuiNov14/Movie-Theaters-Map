@@ -27,8 +27,8 @@ export default function Home({ route, navigation }) {
   };
 
   const defaultUserLocation = {
-    latitude: 10.847388306318624,
-    longitude: 106.83729892481165,
+    latitude: 10.78411461274901,
+    longitude:  106.69196227693206,
   };
 
   const [currentLocation, setCurrentLocation] = useState(null); // No default location
@@ -512,6 +512,7 @@ export default function Home({ route, navigation }) {
     setShowDirections(false);
     setDistrictBoundary(null);
     setFunctionX(false);
+    setRouteCoords([]);
   };
 
   const handleShowTrafficLights = () => {
@@ -656,7 +657,9 @@ export default function Home({ route, navigation }) {
               <Text style={{ paddingTop: 3 }}>Tìm rạp phim...</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.greenBorder} onPress={handleFindNearestCinema}><Image source={require('../assets/cinema_icon.png')} style={styles.image2} /></TouchableOpacity>
-            <TouchableOpacity style={styles.greenBorder} onPress={() => { trafficShow ? handleFindOptimizedPath() : handleShowDirections() }}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
+            {/* <TouchableOpacity style={styles.greenBorder} onPress={() => { trafficShow ? handleFindOptimizedPath() : handleShowDirections() }}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity> */}
+            <TouchableOpacity style={styles.greenBorder} onPress={ handleShowDirections }><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
+
 
           </View>
           <View style={{ position: 'absolute', bottom: '16%', right: 10 }}>
