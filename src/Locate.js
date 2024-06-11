@@ -44,9 +44,9 @@ export default function Locate({ navigation }) {
       >
         {selectedLocation && <Marker coordinate={selectedLocation} />}
       </MapView>
-        <View style={{position:'absolute', bottom:'2%' }}>
+        <View style={{position:'absolute', bottom:'2%', alignSelf: 'center' }}>
         <TouchableOpacity  onPress={handleSaveLocation}>
-          <Text style={{ backgroundColor: "#7f0d00", color: "white", fontWeight: 'bold', padding: 5, borderRadius:15, left:180 }}>Lưu địa chỉ</Text>
+          <Text style={{ backgroundColor: "#7f0d00", color: "white", fontWeight: 'bold', padding: 10, borderRadius:15 }}>Lưu địa chỉ</Text>
         </TouchableOpacity>
         </View>
     </View>
