@@ -51,6 +51,7 @@ export default function Home({ route, navigation }) {
   const [optimalRouteCoords, setOptimalRouteCoords] = useState([]);
   const [showOptimizedDirections, setShowOptimizedDirections] = useState(false);
   const [trafficLights, setTrafficLights] = useState([]);
+  const [trafficShow, setTrafficShow] = useState(false);
 
   //
   useEffect(() => {
@@ -137,6 +138,7 @@ export default function Home({ route, navigation }) {
     // Assuming jsonTrafficData is an array of traffic light objects
     setTrafficLights(jsonTrafficData);
 }, []);
+
   //Function: Tìm rạp phim gần nhất
   const handleFindNearestCinema = async () => {
     setNearestCinema(null);
@@ -412,120 +414,65 @@ export default function Home({ route, navigation }) {
       setDistrict('');
     }
   };
-  //Function 5: Tìm đường đi ngắn nhất, qua ít đèn giao thông nhất
-  const countTrafficLights = (start, end) => {
-    let trafficLightsCount = 0;
-    for (let i = 0; i < trafficLights.length; i++) {
-      const trafficLight = trafficLights[i];
-      const distanceToTrafficLight = calculateDistance(start.latitude, start.longitude, trafficLight.latitude, trafficLight.longitude);
-      if (distanceToTrafficLight < calculateDistance(start.latitude, start.longitude, end.latitude, end.longitude)) {
-        trafficLightsCount++;
-      }
-    }
-    return trafficLightsCount;
+
+  const countTrafficLights = (route) => {
+    return route.reduce((count, point) => {
+      const lat = point[1];
+      const lon = point[0];
+      return count + trafficLights.filter(light => 
+        Math.abs(light.latitude - lat) < 0.0005 && Math.abs(light.longitude - lon) < 0.0005
+      ).length;
+    }, 0);
   };
-  const handleFindOptimizedPath = async () => {
-    setNearestCinema(null);
-    setTheaterMarkers([]);
+
+  const handleFindOptimizedPath = () => {
     setShowDirections(false);
-    setDistrictBoundary(null);
-    try {
-      if (nearestCinema && currentLocation) {
-        const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a';
-        const optimizedRoutes = []; // Mảng để lưu trữ tất cả các tuyến đường tối ưu
-  
-        // Loop through the traffic light data and generate optimized routes for each
-        for (const trafficLight of jsonTrafficData) {
-          const startLat = currentLocation.latitude;
-          const startLng = currentLocation.longitude;
-          const endLat = trafficLight.latitude;
-          const endLng = trafficLight.longitude;
-  
-          // Construct the URL with dynamic start and end coordinates
-          const url = `https://api.openrouteservice.org/v2/directions/driving-car/json?api_key=${apiKey}&start=${startLat},${startLng}&end=${endLat},${endLng}`;
-          
-          console.log("Request URL:", url); // Log URL
-          
+    if (nearestCinema && currentLocation) {
+      const fetchRoute = async () => {
+        const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a'; // Thay YOUR_API_KEY bằng API key của bạn
+        const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${currentLocation.longitude},${currentLocation.latitude}&end=${nearestCinema.location.coordinates[0]},${nearestCinema.location.coordinates[1]}`;
+
+        try {
           const response = await axios.get(url);
-  
-          console.log("Response:", response.data); // Log response
-          const { routes } = response.data;
-          if (routes.length > 0) {
-            const route = routes[0];
-            const steps = route.steps;
-  
+          if (response.data && response.data.features && response.data.features.length > 0) {
+            const routes = response.data.features;
             let minTrafficLights = Infinity;
-  
-            // Iterate through each step of the route
-            for (let i = 0; i < steps.length; i++) {
-              const step = steps[i];
-              const startLocation = step.start_location;
-              const endLocation = step.end_location;
-  
-              // Calculate traffic lights count on the step
-              const trafficLightsCount = countTrafficLights(startLocation, endLocation);
-              console.log("Steps:", steps);
-              console.log("Traffic Lights Count:", trafficLightsCount);
-  
-              // Update the minimum traffic lights count
-              if (trafficLightsCount < minTrafficLights) {
-                minTrafficLights = trafficLightsCount;
+            let bestRoute = [];
+
+            routes.forEach(route => {
+              if (route.geometry && route.geometry.coordinates) {
+                const numTrafficLights = countTrafficLights(route.geometry.coordinates);
+                if (numTrafficLights < minTrafficLights) {
+                  minTrafficLights = numTrafficLights;
+                  bestRoute = route.geometry.coordinates;
+                }
               }
-            }
-  
-            // Add the optimized route to the array
-            optimizedRoutes.push({
-              trafficLightId: trafficLight.id,
-              minTrafficLights,
-              routeCoordinates: route.geometry.coordinates
             });
+
+            if (bestRoute.length > 0) {
+              const coords = bestRoute.map(point => ({
+                latitude: point[1], // latitude
+                longitude: point[0], // longitude
+              }));
+              setRouteCoords(coords);
+            } else {
+              console.error('No suitable route found');
+            }
           } else {
-            console.log('No routes found');
+            console.error('No features found in response:', response.data);
           }
+        } catch (error) {
+          console.error('Error fetching route:', error);
         }
-  
-        // Display all optimized routes on the map
-        setShowOptimizedDirections(true);
-        setOptimalRouteCoords(optimizedRoutes);
-      } else {
-        console.log('Nearest cinema or current location not available');
-      }
-    } catch (error) {
-      console.error('Error finding optimized path:', error);
+      };
+
+      fetchRoute();
+      setShowDirections(true);
+    } else {
+      console.log('Nearest cinema or current location not available');
     }
   };
   
-
-  //Function: search rạp phim bất kỳ 
-  const handleSearchAddress = async () => {
-    const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a';
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${currentLocation.longitude},${currentLocation.latitude}&end=${nearestCinema.location.coordinates[0]},${nearestCinema.location.coordinates[1]}`;
-
-    try {
-      const response = await axios.get(url);
-      if (response.data.status === 'OK') {
-        const location = response.data.results[0].geometry.location;
-        setRegion({
-          latitude: location.lat,
-          longitude: location.lng,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
-
-        // Add a marker for the searched address
-        setTheaterMarkers([{
-          coordinate: { latitude: location.lat, longitude: location.lng },
-          title: 'Searched Address',
-          description: searchAddress,
-        }]);
-      } else {
-        console.error('Error getting geocode:', response.data.status);
-      }
-    } catch (error) {
-      console.error('Error getting geocode:', error);
-    }
-  };
-
   //Function x: Thuật toán Dijkstra
   const [start, setStart] = useState('106.8021132,10.870311');
   const [end, setEnd] = useState('106.8000559,10.8752837');
@@ -552,6 +499,7 @@ export default function Home({ route, navigation }) {
   };
 
   const handleShowTrafficLights = () => {
+    setTrafficShow(!trafficShow);
     setTrafficLights(jsonTrafficData);
   };
   
@@ -643,15 +591,16 @@ export default function Home({ route, navigation }) {
                       <Image source={cinemaIcon} style={{ width: 50, height: 50 }} />
                     </Marker>
                   )}
-                  {trafficLights.map((light, index) => (
+                  {/*Hiển thị đèn giao thông*/}
+                  {trafficShow && (trafficLights.map((light, index) => (
                     <Marker
                       key={index}
                       coordinate={{ latitude: light.latitude, longitude: light.longitude }}
                       title={`Đèn giao thông ${light.id}`}
                     >
-                    <Image source={trafficIcon} style={{ width: 50, height: 50 }} />
+                    <Image source={trafficIcon} style={{ width: 25, height: 25 }} />
                     </Marker>
-                  ))}
+                  )))}
                 </MapView>
               </View>
             ) : (
@@ -703,6 +652,9 @@ export default function Home({ route, navigation }) {
               <TouchableOpacity onPress={handleFindCinemasInMall} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm các rạp phim thuộc trung tâm thương mại</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={handleShowTrafficLights} style={styles.menu}>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>{trafficShow ? 'Ẩn đèn giao thông' : 'Hiển thị đèn giao thông'}</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={handleFindPath} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim gần UIT</Text>
               </TouchableOpacity>
@@ -710,12 +662,12 @@ export default function Home({ route, navigation }) {
             </ScrollView>
           </View>
           <View style={{ position: 'absolute', bottom: '16%', left: '40%', backgroundColor: '#7f0d00', borderRadius: 10, width: 100, height: 30 }}>
-            {/* <TouchableOpacity title="xóa" onPress={handleDeleteAll} >
+            <TouchableOpacity title="xóa" onPress={handleDeleteAll} >
               <Text style={{ color: "white", fontWeight: 'bold', padding: 5, alignSelf: 'center' }}>Xóa</Text>
-            </TouchableOpacity> */}
-            <TouchableOpacity onPress={handleShowTrafficLights} style={styles.menu}>
-              <Text style={{ color: "white", fontWeight: 'bold' }}>Hiển thị đèn giao thông</Text>
             </TouchableOpacity>
+            {/* <TouchableOpacity onPress={handleShowTrafficLights} style={styles.menu}>
+              <Text style={{ color: "white", fontWeight: 'bold' }}>Hiển thị đèn giao thông</Text>
+            </TouchableOpacity> */}
 
           </View>
         </View>
