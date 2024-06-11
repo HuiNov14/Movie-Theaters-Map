@@ -6,11 +6,14 @@ import cinemaData from './data/db.json';
 import axios from 'axios';
 import districtData from './data/districtPolygons.json';
 import jsonData from './data/export2.json';
+import jsonTrafficData from './data/updated_data.json'
 import { parseData, dijkstra } from './Dijkstra'; 
 
 const { nodes, edges } = parseData(jsonData);
 const customIcon = require('../assets/placeholder.png'); //Icon Map
 const cinemaIcon = require('../assets/cinema.png'); //Icon Map
+const trafficIcon = require('../assets/traffic-lights.png'); //Icon Map
+
 
 export default function Home({ route, navigation }) {
 
@@ -45,6 +48,9 @@ export default function Home({ route, navigation }) {
   const [modalVisible3, setModalVisible3] = useState(false);
   const [ratingThreshold, setRatingThreshold] = useState('');
   const [functionX, setFunctionX] = useState(false);
+  const [optimalRouteCoords, setOptimalRouteCoords] = useState([]);
+  const [showOptimizedDirections, setShowOptimizedDirections] = useState(false);
+  const [trafficLights, setTrafficLights] = useState([]);
 
   //
   useEffect(() => {
@@ -88,28 +94,28 @@ export default function Home({ route, navigation }) {
     setDistrictBoundary(null);
 
     // lấy vị trí mặc định nếu xài máy ảo 
-    // setCurrentLocation(defaultUserLocation); 
-    // setRegion({
-    //   latitude: defaultUserLocation.latitude,
-    //   longitude: defaultUserLocation.longitude,
-    //   latitudeDelta: 0.0922,
-    //   longitudeDelta: 0.0421,
-    // });
+    setCurrentLocation(defaultUserLocation); 
+    setRegion({
+      latitude: defaultUserLocation.latitude,
+      longitude: defaultUserLocation.longitude,
+      latitudeDelta: 0.0922,
+      longitudeDelta: 0.0421,
+    });
 
     //Lấy vị trí hiện tại của user nếu xài điện thoại
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      setCurrentLocation(location.coords);
+    // const { status } = await Location.requestForegroundPermissionsAsync();
+    // if (status === 'granted') {
+    //   const location = await Location.getCurrentPositionAsync({});
+    //   const { latitude, longitude } = location.coords;
+    //   setCurrentLocation(location.coords);
 
-      setRegion({
-        latitude: latitude,
-        longitude: longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-    }
+    //   setRegion({
+    //     latitude: latitude,
+    //     longitude: longitude,
+    //     latitudeDelta: 0.0922,
+    //     longitudeDelta: 0.0421,
+    //   });
+    // }
 
     try {
       const address = await Location.reverseGeocodeAsync(defaultUserLocation);
@@ -127,6 +133,10 @@ export default function Home({ route, navigation }) {
     }
   };
 
+  useEffect(() => {
+    // Assuming jsonTrafficData is an array of traffic light objects
+    setTrafficLights(jsonTrafficData);
+}, []);
   //Function: Tìm rạp phim gần nhất
   const handleFindNearestCinema = async () => {
     setNearestCinema(null);
@@ -402,6 +412,89 @@ export default function Home({ route, navigation }) {
       setDistrict('');
     }
   };
+  //Function 5: Tìm đường đi ngắn nhất, qua ít đèn giao thông nhất
+  const countTrafficLights = (start, end) => {
+    let trafficLightsCount = 0;
+    for (let i = 0; i < trafficLights.length; i++) {
+      const trafficLight = trafficLights[i];
+      const distanceToTrafficLight = calculateDistance(start.latitude, start.longitude, trafficLight.latitude, trafficLight.longitude);
+      if (distanceToTrafficLight < calculateDistance(start.latitude, start.longitude, end.latitude, end.longitude)) {
+        trafficLightsCount++;
+      }
+    }
+    return trafficLightsCount;
+  };
+  const handleFindOptimizedPath = async () => {
+    setNearestCinema(null);
+    setTheaterMarkers([]);
+    setShowDirections(false);
+    setDistrictBoundary(null);
+    try {
+      if (nearestCinema && currentLocation) {
+        const apiKey = '5b3ce3597851110001cf62484ed9d53e837c4fc695df13f6acd4455a';
+        const optimizedRoutes = []; // Mảng để lưu trữ tất cả các tuyến đường tối ưu
+  
+        // Loop through the traffic light data and generate optimized routes for each
+        for (const trafficLight of jsonTrafficData) {
+          const startLat = currentLocation.latitude;
+          const startLng = currentLocation.longitude;
+          const endLat = trafficLight.latitude;
+          const endLng = trafficLight.longitude;
+  
+          // Construct the URL with dynamic start and end coordinates
+          const url = `https://api.openrouteservice.org/v2/directions/driving-car/json?api_key=${apiKey}&start=${startLat},${startLng}&end=${endLat},${endLng}`;
+          
+          console.log("Request URL:", url); // Log URL
+          
+          const response = await axios.get(url);
+  
+          console.log("Response:", response.data); // Log response
+          const { routes } = response.data;
+          if (routes.length > 0) {
+            const route = routes[0];
+            const steps = route.steps;
+  
+            let minTrafficLights = Infinity;
+  
+            // Iterate through each step of the route
+            for (let i = 0; i < steps.length; i++) {
+              const step = steps[i];
+              const startLocation = step.start_location;
+              const endLocation = step.end_location;
+  
+              // Calculate traffic lights count on the step
+              const trafficLightsCount = countTrafficLights(startLocation, endLocation);
+              console.log("Steps:", steps);
+              console.log("Traffic Lights Count:", trafficLightsCount);
+  
+              // Update the minimum traffic lights count
+              if (trafficLightsCount < minTrafficLights) {
+                minTrafficLights = trafficLightsCount;
+              }
+            }
+  
+            // Add the optimized route to the array
+            optimizedRoutes.push({
+              trafficLightId: trafficLight.id,
+              minTrafficLights,
+              routeCoordinates: route.geometry.coordinates
+            });
+          } else {
+            console.log('No routes found');
+          }
+        }
+  
+        // Display all optimized routes on the map
+        setShowOptimizedDirections(true);
+        setOptimalRouteCoords(optimizedRoutes);
+      } else {
+        console.log('Nearest cinema or current location not available');
+      }
+    } catch (error) {
+      console.error('Error finding optimized path:', error);
+    }
+  };
+  
 
   //Function: search rạp phim bất kỳ 
   const handleSearchAddress = async () => {
@@ -458,6 +551,10 @@ export default function Home({ route, navigation }) {
     setFunctionX(false);
   };
 
+  const handleShowTrafficLights = () => {
+    setTrafficLights(jsonTrafficData);
+  };
+  
   return (
     <ScrollView>
       <View style={styles.container}>
@@ -471,7 +568,7 @@ export default function Home({ route, navigation }) {
                     <Marker
                       coordinate={{ latitude: currentLocation.latitude, longitude: currentLocation.longitude }}
                       title="Vị trí của bạn"
-                      description="You are here"
+                      description="Ở đây!"
                     >
                       <Image source={customIcon} style={{ width: 50, height: 50 }} />
                     </Marker>
@@ -488,6 +585,7 @@ export default function Home({ route, navigation }) {
                       <Image source={cinemaIcon} style={{ width: 50, height: 50 }} />
                     </Marker>
                   ))}
+
                   {/* Hiển thị Marker cho rạp chiếu phim gần nhất */}
                   {nearestCinema && (
                     <Marker
@@ -513,6 +611,15 @@ export default function Home({ route, navigation }) {
                     <Polyline coordinates={routeCoords} strokeColor="#7f0d00" strokeWidth={3} />
                   )}
 
+                    {/* Hiển thị tuyến đường */}
+                    {showOptimizedDirections && (
+                      <Polyline
+                        coordinates={optimalRouteCoords}
+                        strokeColor="#7f0d00"
+                        strokeWidth={3}
+                      />
+                    )}
+
                   {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất UIT*/}
                   {functionX && (<Polyline
                     coordinates={path.map(coord => ({ latitude: coord[1], longitude: coord[0] }))}
@@ -536,6 +643,15 @@ export default function Home({ route, navigation }) {
                       <Image source={cinemaIcon} style={{ width: 50, height: 50 }} />
                     </Marker>
                   )}
+                  {trafficLights.map((light, index) => (
+                    <Marker
+                      key={index}
+                      coordinate={{ latitude: light.latitude, longitude: light.longitude }}
+                      title={`Đèn giao thông ${light.id}`}
+                    >
+                    <Image source={trafficIcon} style={{ width: 50, height: 50 }} />
+                    </Marker>
+                  ))}
                 </MapView>
               </View>
             ) : (
@@ -560,13 +676,13 @@ export default function Home({ route, navigation }) {
               <Text style={{ paddingTop: 3 }}>Tìm rạp phim...</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.greenBorder} onPress={handleFindNearestCinema}><Image source={require('../assets/cinema_icon.png')} style={styles.image2} /></TouchableOpacity>
-            <TouchableOpacity style={styles.greenBorder} onPress={handleShowDirections}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
+            <TouchableOpacity style={styles.greenBorder} onPress={handleFindOptimizedPath}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
 
           </View>
-          <View style={{ position: 'absolute', bottom: '6%', right: 10 }}>
+          <View style={{ position: 'absolute', bottom: '16%', right: 10 }}>
             <TouchableOpacity style={styles.greenBorder} onPress={getCurrentLocation}><Image source={require('../assets/placeholder.png')} style={styles.image2} /></TouchableOpacity>
           </View>
-          <View style={{ position: 'absolute', bottom: '6%', flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 5 }}>
+          <View style={{ position: 'absolute', bottom: '16%', flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 5 }}>
             <TouchableOpacity onPress={() => navigation.navigate('Locate')}>
               <View style={styles.greenBorder}>
                 <Image source={require('../assets/google-maps.png')} style={styles.image2} />
@@ -593,10 +709,14 @@ export default function Home({ route, navigation }) {
               {/* Thêm tùy chọn khác nếu cần */}
             </ScrollView>
           </View>
-          <View style={{ position: 'absolute', bottom: '6%', left: '40%', backgroundColor: '#7f0d00', borderRadius: 10, width: 100, height: 30 }}>
-            <TouchableOpacity title="xóa" onPress={handleDeleteAll} >
+          <View style={{ position: 'absolute', bottom: '16%', left: '40%', backgroundColor: '#7f0d00', borderRadius: 10, width: 100, height: 30 }}>
+            {/* <TouchableOpacity title="xóa" onPress={handleDeleteAll} >
               <Text style={{ color: "white", fontWeight: 'bold', padding: 5, alignSelf: 'center' }}>Xóa</Text>
+            </TouchableOpacity> */}
+            <TouchableOpacity onPress={handleShowTrafficLights} style={styles.menu}>
+              <Text style={{ color: "white", fontWeight: 'bold' }}>Hiển thị đèn giao thông</Text>
             </TouchableOpacity>
+
           </View>
         </View>
         <Modal
