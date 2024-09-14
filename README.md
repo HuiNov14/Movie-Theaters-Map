@@ -39,5 +39,5 @@
 https://www.overleaf.com/read/gdsdhvnhvqgk#45b228
 
 ## Video Demo: 
-https://drive.google.com/drive/u/0/folders/1jwwXZGnrcdnWtz52Ks0qpk7SA6ngibPl
+https://drive.google.com/file/d/1YL_w8OmYAL_mQomm7Bw46kaD0MLohu3W/view?usp=sharing
 
