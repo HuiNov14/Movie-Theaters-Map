@@ -27,9 +27,16 @@ const Main = ({ navigation }) => {
             return (
               <Image
                 source={iconName}
-                style={{ width: 30, height: 30, tintColor: focused ? '#00BFFF' : 'black' }}
+                style={{ width: 30, height: 30, tintColor: focused ? '#006600' : 'black' }}
               />
             );
+          },
+          tabBarActiveTintColor: '#006600', // Màu chữ khi tab được chọn
+          tabBarInactiveTintColor: 'black', // Màu chữ khi tab không được chọn
+          tabBarStyle: {
+            backgroundColor: '#eee', // Màu nền của thanh tab
+            borderTopWidth: 2, // Viền ở trên cùng của thanh tab
+            borderColor: '#006600'
           },
         })}
       >

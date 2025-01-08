@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React , { useContext }from 'react';
+import React, { useContext } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const Stack = createNativeStackNavigator();
@@ -15,8 +15,14 @@ export default function Map({ navigation }) {
         component={HomeScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="Screen1" component={Screen1} options={{ headerShown: false }}/>
-      <Stack.Screen name="Locate" component={Locate} />
+      <Stack.Screen name="Screen1" component={Screen1} options={{ headerShown: false }} />
+      <Stack.Screen name="Locate" component={Locate} options={{
+        headerStyle: {
+          backgroundColor: '#006600',
+          height: 50,
+        },
+        headerTintColor: 'white', 
+      }} />
     </Stack.Navigator>
   );
 }
@@ -28,13 +34,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonAdd: {
-  
-    marginRight:15,
+
+    marginRight: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
   add: {
-   height:30,
-   width:30,
+    height: 30,
+    width: 30,
   },
 });

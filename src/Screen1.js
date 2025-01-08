@@ -82,7 +82,7 @@ const Screen1 = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.safeAreaView}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Tìm kiếm rạp phim</Text>
+        <Text style={styles.headerTitle}>Tìm kiếm sân bóng</Text>
         <TouchableOpacity onPress={() => navigation.navigate('HomeScreen')} style={styles.headerButton}>
           <Text style={styles.headerButtonText}>Back</Text>
         </TouchableOpacity>
@@ -90,7 +90,7 @@ const Screen1 = ({ route, navigation }) => {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Tìm kiếm rạp phim hoặc địa chỉ..."
+          placeholder="Nhập tên sân bóng..."
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#7f0d00',
+    backgroundColor: '#006600',
     padding: 15,
     paddingTop: 40, // Để tránh trùng với status bar trên iOS
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   headerButtonText: {
-    color: '#7f0d00',
+    color: '#006600',
     fontSize: 16,
   },
   safeAreaView: {
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   searchButton: {
-    backgroundColor: "#7f0d00",
+    backgroundColor: "#006600",
     marginLeft: 10,
     borderRadius: 10,
     justifyContent: "center",

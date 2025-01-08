@@ -10,8 +10,8 @@ import jsonTrafficData from './data/updated_data.json'
 import { parseData, dijkstra } from './Dijkstra';
 
 const { nodes, edges } = parseData(jsonData);
-const customIcon = require('../assets/placeholder.png'); //Icon Map
-const cinemaIcon = require('../assets/cinema.png'); //Icon Map
+const customIcon = require('../assets/position.png'); //Icon Map
+const cinemaIcon = require('../assets/soccer-field6.png'); //Icon Map
 const trafficIcon = require('../assets/traffic-lights.png'); //Icon Map
 const roadIcon = require('../assets/destination.png'); //Icon Map
 
@@ -477,7 +477,7 @@ export default function Home({ route, navigation }) {
     setDistrictBoundary(null);
     if (true) {
       console.log(district);
-      const cinemas = cinemaData.filter(cinema => cinema.cinema_name.includes('CGV'));
+      const cinemas = cinemaData.filter(cinema => cinema.cinema_name.includes('Sân liên hợp'));
       setCinemasInDistrict(cinemas);
 
       if (cinemas.length > 0) {
@@ -634,8 +634,8 @@ export default function Home({ route, navigation }) {
                     <Circle
                       center={currentLocation}
                       radius={radius * 500}
-                      strokeColor="#FF0000"
-                      fillColor="rgba(255,0,0,0.3)"
+                      strokeColor="#00ff00"
+                      fillColor="rgba(51, 173, 65, 0.29)"
                     />
                   )}
                   {/* Hiển thị Markers cho các rạp chiếu phim gần đó */}
@@ -664,15 +664,15 @@ export default function Home({ route, navigation }) {
                   {districtBoundary && (
                     <Polygon
                       coordinates={districtBoundary.map(coord => ({ latitude: coord[1], longitude: coord[0] }))}
-                      strokeColor="#FF0000"
-                      fillColor="rgba(255,0,0,0.2)"
+                      strokeColor="#00ff00"
+                      fillColor="rgba(0, 255, 60, 0.3)"
                       strokeWidth={2}
                     />
                   )}
 
                   {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất */}
                   {showDirections && (
-                    <Polyline coordinates={routeCoords} strokeColor="#7f0d00" strokeWidth={3} />
+                    <Polyline coordinates={routeCoords} strokeColor="#006600" strokeWidth={3} />
                   )}
 
                   {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất */}
@@ -687,15 +687,15 @@ export default function Home({ route, navigation }) {
                     <Circle
                       center={roadCoordinates[0]}
                       radius={5 * 500}
-                      strokeColor="#FF0000"
-                      fillColor="rgba(255,0,0,0.3)"
+                      strokeColor="#00ff00"
+                      fillColor="rgba(0, 255, 60, 0.3)"
                     />
                   )}
 
                   {/* Hiển thị tuyến đường đến rạp chiếu phim gần nhất UIT*/}
                   {functionX && (<Polyline
                     coordinates={path.map(coord => ({ latitude: coord[1], longitude: coord[0] }))}
-                    strokeColor="#7f0d00"
+                    strokeColor="#006600"
                     strokeWidth={3}
                   />)}
                   {functionX && (
@@ -729,7 +729,7 @@ export default function Home({ route, navigation }) {
                     <Polyline
                       coordinates={routeCoords}
                       strokeWidth={4}
-                      strokeColor="blue"
+                      strokeColor="#68bd6b"
                     />
                   )}
                 </MapView>
@@ -755,17 +755,17 @@ export default function Home({ route, navigation }) {
                 navigation.navigate('Screen1')
               }}
             >
-              <Text style={{ paddingTop: 3 }}>Tìm rạp phim...</Text>
+              <Text style={{ paddingTop: 3 }}>Tìm sân bóng...</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.greenBorder} onPress={handleFindNearestCinema}><Image source={require('../assets/cinema_icon.png')} style={styles.image2} /></TouchableOpacity>
-            <TouchableOpacity style={styles.greenBorder} onPress={() => { trafficShow ? handleFindOptimizedPath() : handleShowDirections() }}><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity>
+            <TouchableOpacity style={styles.greenBorder} onPress={handleFindNearestCinema}><Image source={require('../assets/football-field.png')} style={styles.image2} /></TouchableOpacity>
+            <TouchableOpacity style={styles.greenBorder} onPress={() => { trafficShow ? handleFindOptimizedPath() : handleShowDirections() }}><Image source={require('../assets/circle.png')} style={styles.image2} /></TouchableOpacity>
             {/* <TouchableOpacity style={styles.greenBorder} onPress={ handleShowDirections }><Image source={require('../assets/destination.png')} style={styles.image2} /></TouchableOpacity> */}
 
           </View>
-          <View style={{ position: 'absolute', bottom: '16%', right: 10 }}>
-            <TouchableOpacity style={styles.greenBorder} onPress={getCurrentLocation}><Image source={require('../assets/placeholder.png')} style={styles.image2} /></TouchableOpacity>
+          <View style={{ position: 'absolute', bottom: '12%', right: 10 }}>
+            <TouchableOpacity style={styles.greenBorder} onPress={getCurrentLocation}><Image source={require('../assets/placeholder2.png')} style={styles.image2} /></TouchableOpacity>
           </View>
-          <View style={{ position: 'absolute', bottom: '16%', flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 5 }}>
+          <View style={{ position: 'absolute', bottom: '12%', flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 15, marginTop: 5 }}>
             <TouchableOpacity onPress={() => navigation.navigate('Locate')}>
               <View style={styles.greenBorder}>
                 <Image source={require('../assets/google-maps.png')} style={styles.image2} />
@@ -775,30 +775,30 @@ export default function Home({ route, navigation }) {
           <View style={{ flexDirection: 'row', padding: 10, position: 'absolute', top: '10%' }}>
             <ScrollView horizontal>
               <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.menu}>
-                <Text style={{ color: "white", fontWeight: 'bold' }}>Các rạp chiếu phim gần bạn nhất</Text>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm sân bóng đá gần khu vực của bạn</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setModalVisible2(true)} style={styles.menu}>
-                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim trong khu vực quận</Text>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm sân bóng trong khu vực quận</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setModalVisible4(true)} style={styles.menu}>
-                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim gần đoạn đường</Text>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm sân bóng gần đoạn đường</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModalVisible3(true)} style={styles.menu}>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm các sân bóng có đánh giá tốt nhất</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleFindCinemasInMall} style={styles.menu}>
+                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm các sân bóng thuộc các sân liên hợp</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleShowTrafficLights} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>{trafficShow ? 'Ẩn đèn giao thông' : 'Hiển thị đèn giao thông'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setModalVisible3(true)} style={styles.menu}>
-                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm các rạp phim có đánh giá tốt nhất</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleFindCinemasInMall} style={styles.menu}>
-                <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm các rạp phim thuộc trung tâm thương mại</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleFindPath} style={styles.menu}>
+              {/* <TouchableOpacity onPress={handleFindPath} style={styles.menu}>
                 <Text style={{ color: "white", fontWeight: 'bold' }}>Tìm rạp phim gần UIT</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               {/* Thêm tùy chọn khác nếu cần */}
             </ScrollView>
           </View>
-          <View style={{ position: 'absolute', bottom: '16%', left: '40%', backgroundColor: '#7f0d00', borderRadius: 10, width: 100, height: 30 }}>
+          <View style={{ position: 'absolute', bottom: '12%', left: '40%', backgroundColor: '#006600', borderRadius: 10, width: 100, height: 30 }}>
             <TouchableOpacity title="xóa" onPress={handleDeleteAll} >
               <Text style={{ color: "white", fontWeight: 'bold', padding: 5, alignSelf: 'center' }}>Xóa</Text>
             </TouchableOpacity>
@@ -821,7 +821,7 @@ export default function Home({ route, navigation }) {
               <TextInput
                 style={{
                   borderWidth: 2,
-                  borderColor: '#7f0d00',
+                  borderColor: '#006600',
                   backgroundColor: '#eee',
                   padding: 10,
                   marginTop: 10,
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
   },
   greenBorder: {
     borderWidth: 2,
-    borderColor: '#7f0d00',
+    borderColor: '#006600',
     width: 50,
     height: 50,
     backgroundColor: '#eee',
@@ -1014,7 +1014,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 2,
-    borderColor: '#7f0d00',
+    borderColor: '#006600',
     backgroundColor: '#eee',
     padding: 10,
     width: '68%',
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
   },
   input2: {
     borderWidth: 2,
-    borderColor: '#7f0d00',
+    borderColor: '#006600',
     backgroundColor: '#eee',
     padding: 10,
     marginTop: 10,
@@ -1037,7 +1037,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     marginRight: 10,
-    backgroundColor: '#7f0d00',
+    backgroundColor: '#006600',
     borderRadius: 20,
   },
   centeredView: {
@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     margin: 20,
-    backgroundColor: '#7f0d00',
+    backgroundColor: '#006600',
     borderRadius: 20,
     padding: 5,
     paddingHorizontal: 10,
