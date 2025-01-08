@@ -1,4 +1,4 @@
-# A Movie Theaters Map Mobile Application
+# A Soccer Field Booking Map Mobile Application
 
 ## Set up: 
 1. Prerequisites
@@ -15,7 +15,7 @@
    
 3. Clone the Repository
 
-       git clone https://github.com/HuiNov14/Movie-Theaters-Map/.git
+       git clone https://github.com/HuiNov14/Soccer_Field_Booking/.git
 
 4. Install Dependencies
 
@@ -36,8 +36,7 @@
        npx react-native run-ios
 
 ## Report Details:
-https://www.overleaf.com/read/gdsdhvnhvqgk#45b228
+https://www.overleaf.com/read/fxcsyggwntdk#fadca9
 
 ## Video Demo: 
-https://drive.google.com/file/d/1YL_w8OmYAL_mQomm7Bw46kaD0MLohu3W/view?usp=sharing
-
+https://drive.google.com/file/d/19tfCTkiKPRwC-mhtXLGfvyinFeorUeap/view?usp=sharing
